@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Dompetku</title>
+  <!-- [REV2] Font: Inter (sans) + Playfair Display (serif elegan) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <!-- Chart.js via CDN — satu-satunya library eksternal yang diizinkan -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     SVG FILTER: Gooey effect untuk liquid nav
+     ═══════════════════════════════════════════ -->
+<svg style="position:absolute;width:0;height:0;" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="gooey">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur"/>
+      <feColorMatrix in="blur" mode="matrix"
+        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8" result="goo"/>
+      <feComposite in="SourceGraphic" in2="goo" operator="atop"/>
+    </filter>
+  </defs>
+</svg>
+
+<!-- ═══════════════════════════════════════════
+     APP WRAPPER
+     ═══════════════════════════════════════════ -->
+<div id="app">
+
+  <!-- ═══════════════════════════════════════════
+       SIDEBAR (laptop ≥1024px only)
+       ═══════════════════════════════════════════ -->
+  <nav id="sidebar-nav" class="sidebar-nav" aria-label="Navigasi utama">
+    <div class="sidebar-brand">
+      <span class="sidebar-app-title">Dompetku</span>
+      <span class="sidebar-subtitle">Manajemen Keuangan</span>
+    </div>
+
+    <!-- Items + gooey wrapped together so layer inset matches items area -->
+    <div class="sidebar-items-container">
+      <!-- Gooey layer: hanya bubble -->
+      <div class="nav-gooey-layer" id="sidebar-gooey-layer" style="filter:url(#gooey)" aria-hidden="true">
+        <div id="sidebar-bubble" class="nav-bubble"></div>
+      </div>
+
+      <!-- Item layer: di atas gooey, tidak kena filter -->
+      <div class="nav-gooey-wrapper" id="sidebar-items-wrapper">
+      <button class="nav-item active" data-page="beranda" aria-label="Beranda">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 12L12 3l9 9"/>
+            <path d="M9 21V12h6v9"/>
+            <path d="M3 12v9h6M15 21v-9h6v9"/>
+          </svg>
+        </span>
+        <span class="nav-label">Beranda</span>
+      </button>
+
+      <button class="nav-item" data-page="akun" aria-label="Akun">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="2" y="5" width="20" height="14" rx="2"/>
+            <path d="M2 10h20"/>
+            <path d="M6 15h4"/>
+          </svg>
+        </span>
+        <span class="nav-label">Akun</span>
+      </button>
+
+      <button class="nav-item" data-page="transaksi" aria-label="Transaksi">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+            <rect x="9" y="3" width="6" height="4" rx="1"/>
+            <path d="M9 12h6M9 16h4"/>
+          </svg>
+        </span>
+        <span class="nav-label">Transaksi</span>
+      </button>
+
+      <button class="nav-item" data-page="summary" aria-label="Summary">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 20V10M12 20V4M6 20v-6"/>
+          </svg>
+        </span>
+        <span class="nav-label">Summary</span>
+      </button>
+      </div><!-- /.nav-gooey-wrapper -->
+    </div><!-- /.sidebar-items-container -->
+
+    <div class="sidebar-footer">
+      <span class="sidebar-footer-label">Tema</span>
+      <button id="btn-toggle-theme-sidebar" class="icon-btn" aria-label="Ganti tema">
+        <span class="theme-icon">🌙</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════
+       CONTENT AREA (wraps all pages)
+       ═══════════════════════════════════════════ -->
+  <div class="content-area">
+
+  <!-- ─── HALAMAN 1: BERANDA ─── -->
+  <section id="page-beranda" class="page active">
+    <header class="page-header">
+      <div class="header-left">
+        <h1 class="app-title">Dompetku</h1>
+        <p class="header-date" id="header-date"></p>
+      </div>
+      <button id="btn-toggle-theme" class="icon-btn" aria-label="Ganti tema">
+        <span class="theme-icon">🌙</span>
+      </button>
+    </header>
+
+    <!-- Laptop: grid wrapper; on mobile these divs are invisible wrappers -->
+    <div class="beranda-laptop-grid">
+      <div class="beranda-cards-col">
+        <!-- Kartu Saldo -->
+        <div class="cards-row">
+          <div class="card card-cash" id="card-cash">
+            <p class="card-label">Cash</p>
+            <p class="card-amount" id="saldo-cash">Rp 0</p>
+          </div>
+          <div class="card card-digital" id="card-digital">
+            <p class="card-label">Akun Digital / Bank</p>
+            <p class="card-amount" id="saldo-digital">Rp 0</p>
+          </div>
+        </div>
+
+        <!-- Kartu Income / Expense bulan berjalan -->
+        <div class="cards-row">
+          <div class="card card-income">
+            <p class="card-label">Pemasukan Bulan Ini</p>
+            <p class="card-amount income" id="income-bulan">Rp 0</p>
+          </div>
+          <div class="card card-expense">
+            <p class="card-label">Pengeluaran Bulan Ini</p>
+            <p class="card-amount expense" id="expense-bulan">Rp 0</p>
+          </div>
+        </div>
+
+        <!-- Tombol Hapus Data Contoh (muncul jika seed data aktif) -->
+        <div id="seed-banner" class="seed-banner hidden">
+          <span>📋 Data contoh aktif</span>
+          <button id="btn-hapus-seed" class="btn-text-danger">Hapus Data Contoh</button>
+        </div>
+      </div><!-- /.beranda-cards-col -->
+
+      <!-- Daftar 7 transaksi terbaru (right column on laptop) -->
+      <div class="beranda-recent-col">
+        <div class="section-header">
+          <h2 class="section-title">Transaksi Terbaru</h2>
+        </div>
+        <div id="list-transaksi-terbaru" class="transaction-list">
+          <!-- Diisi oleh JS -->
+        </div>
+      </div><!-- /.beranda-recent-col -->
+    </div><!-- /.beranda-laptop-grid -->
+
+  </section>
+
+  <!-- ─── HALAMAN 2: AKUN ─── -->
+  <section id="page-akun" class="page">
+    <header class="page-header">
+      <h1 class="page-title">Kelola Akun</h1>
+      <button id="btn-tambah-akun" class="btn-primary btn-sm">+ Akun</button>
+    </header>
+
+    <div class="section-header">
+      <h2 class="section-title">Akun Biasa</h2>
+    </div>
+    <div id="list-akun-biasa" class="account-list">
+      <!-- Diisi oleh JS -->
+    </div>
+
+    <div class="section-header">
+      <h2 class="section-title">Akun Investasi</h2>
+    </div>
+    <div id="list-akun-investasi" class="account-list">
+      <!-- Diisi oleh JS -->
+    </div>
+  </section>
+
+  <!-- ─── HALAMAN 3: TRANSAKSI ─── -->
+  <section id="page-transaksi" class="page">
+    <header class="page-header">
+      <h1 class="page-title">Transaksi Bulanan</h1>
+      <span id="transaksi-tahun" class="year-badge"></span>
+    </header>
+
+    <!-- Pilih bulan -->
+    <div id="month-grid" class="month-grid">
+      <!-- Diisi oleh JS -->
+    </div>
+
+    <!-- Tabel detail bulan terpilih -->
+    <div id="transaksi-detail" class="transaksi-detail hidden">
+      <div class="detail-header">
+        <button id="btn-back-months" class="btn-back">← Kembali</button>
+        <h2 id="transaksi-bulan-title" class="section-title"></h2>
+        <button id="btn-export-csv" class="btn-outline btn-sm">Export CSV</button>
+      </div>
+      <div class="table-wrapper">
+        <table id="tabel-transaksi" class="data-table">
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Judul</th>
+              <th>Keterangan</th>
+              <th>Tipe</th>
+              <th>Kategori</th>
+              <th>Akun</th>
+              <th>Nominal</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-transaksi">
+            <!-- Diisi oleh JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── HALAMAN 4: SUMMARY ─── -->
+  <section id="page-summary" class="page">
+    <header class="page-header">
+      <h1 class="page-title">Summary Bulanan</h1>
+      <span id="summary-tahun" class="year-badge"></span>
+    </header>
+
+    <!-- Pilih bulan -->
+    <div id="summary-month-grid" class="month-grid">
+      <!-- Diisi oleh JS -->
+    </div>
+
+    <!-- Detail summary bulan terpilih -->
+    <div id="summary-detail" class="summary-detail hidden">
+      <div class="detail-header">
+        <button id="btn-back-summary" class="btn-back">← Kembali</button>
+        <h2 id="summary-bulan-title" class="section-title"></h2>
+      </div>
+
+      <!-- Kartu totals -->
+      <div class="cards-row cards-3">
+        <div class="card">
+          <p class="card-label">Total Income</p>
+          <p class="card-amount income" id="summary-total-income">Rp 0</p>
+        </div>
+        <div class="card">
+          <p class="card-label">Total Expense</p>
+          <p class="card-amount expense" id="summary-total-expense">Rp 0</p>
+        </div>
+        <div class="card">
+          <p class="card-label">Net Cash Flow</p>
+          <p class="card-amount" id="summary-net-cashflow">Rp 0</p>
+        </div>
+      </div>
+
+      <!-- Donut charts -->
+      <div class="charts-row">
+        <div class="card chart-card">
+          <h3 class="chart-title">Pengeluaran per Kategori</h3>
+          <div class="chart-container">
+            <canvas id="chart-expense"></canvas>
+          </div>
+          <div id="legend-expense" class="chart-legend"></div>
+        </div>
+        <div class="card chart-card">
+          <h3 class="chart-title">Pemasukan per Kategori</h3>
+          <div class="chart-container">
+            <canvas id="chart-income"></canvas>
+          </div>
+          <div id="legend-income" class="chart-legend"></div>
+        </div>
+      </div>
+
+      <!-- AI Summary -->
+      <div class="card ai-card">
+        <div class="ai-card-header">
+          <h3 class="chart-title">🤖 Ringkasan &amp; Masukan AI</h3>
+          <button id="btn-regenerate-ai" class="btn-outline btn-sm">Buat Ulang</button>
+        </div>
+        <div id="ai-summary-content" class="ai-content">
+          <!-- Diisi oleh JS -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  </div><!-- /.content-area -->
+
+  <!-- ─── FLOATING ACTION BUTTON ─── -->
+  <button id="fab" class="fab" aria-label="Tambah transaksi">
+    <span class="fab-icon">+</span>
+  </button>
+
+  <!-- ─── BOTTOM NAVIGATION (mobile/tablet only) ─── -->
+  <!-- [REV3] Navbar simetris: flex:1 per item, SVG ikon seragam 22×22 -->
+  <nav id="bottom-nav" class="bottom-nav">
+    <!-- Gooey layer: hanya bubble, terpisah dari tombol agar filter tidak menelan ikon -->
+    <div class="nav-gooey-layer" style="filter:url(#gooey)" aria-hidden="true">
+      <div id="nav-bubble" class="nav-bubble"></div>
+    </div>
+
+    <!-- Item layer: di atas gooey, tidak kena filter -->
+    <div class="nav-gooey-wrapper" id="nav-items-wrapper">
+      <!-- Beranda -->
+      <button class="nav-item active" data-page="beranda">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 12L12 3l9 9"/>
+            <path d="M9 21V12h6v9"/>
+            <path d="M3 12v9h6M15 21v-9h6v9"/>
+          </svg>
+        </span>
+        <span class="nav-label">Beranda</span>
+      </button>
+
+      <!-- Akun -->
+      <button class="nav-item" data-page="akun">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="2" y="5" width="20" height="14" rx="2"/>
+            <path d="M2 10h20"/>
+            <path d="M6 15h4"/>
+          </svg>
+        </span>
+        <span class="nav-label">Akun</span>
+      </button>
+
+      <!-- Transaksi -->
+      <button class="nav-item" data-page="transaksi">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+            <rect x="9" y="3" width="6" height="4" rx="1"/>
+            <path d="M9 12h6M9 16h4"/>
+          </svg>
+        </span>
+        <span class="nav-label">Transaksi</span>
+      </button>
+
+      <!-- Summary -->
+      <button class="nav-item" data-page="summary">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 20V10M12 20V4M6 20v-6"/>
+          </svg>
+        </span>
+        <span class="nav-label">Summary</span>
+      </button>
+    </div>
+  </nav>
+
+</div><!-- /#app -->
+
+<!-- ═══════════════════════════════════════════
+     MODAL: TAMBAH / EDIT TRANSAKSI
+     ═══════════════════════════════════════════ -->
+<div id="modal-transaksi" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-transaksi-title">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 id="modal-transaksi-title" class="modal-title">Tambah Transaksi</h2>
+      <button class="modal-close" data-close="modal-transaksi" aria-label="Tutup">✕</button>
+    </div>
+    <form id="form-transaksi" class="modal-form" novalidate>
+      <input type="hidden" id="trx-id" />
+
+      <div class="form-group">
+        <label for="trx-judul">Judul <span class="required">*</span></label>
+        <input type="text" id="trx-judul" placeholder="cth. Makan siang, Gaji..." maxlength="80" required />
+      </div>
+
+      <div class="form-group">
+        <label for="trx-keterangan">Keterangan</label>
+        <input type="text" id="trx-keterangan" placeholder="Opsional..." maxlength="120" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="trx-nominal">Nominal <span class="required">*</span></label>
+          <input type="number" id="trx-nominal" placeholder="0" min="1" step="1" required />
+        </div>
+        <div class="form-group">
+          <label for="trx-tanggal">Tanggal <span class="required">*</span></label>
+          <input type="date" id="trx-tanggal" required />
+        </div>
+      </div>
+
+      <!-- Tipe Transaksi -->
+      <div class="form-group">
+        <label>Tipe <span class="required">*</span></label>
+        <div class="type-tabs" id="tipe-tabs">
+          <button type="button" class="type-tab active" data-tipe="expense">Pengeluaran</button>
+          <button type="button" class="type-tab" data-tipe="income">Pemasukan</button>
+          <button type="button" class="type-tab" data-tipe="transfer">Transfer</button>
+          <button type="button" class="type-tab" data-tipe="investasi">Investasi</button>
+        </div>
+        <input type="hidden" id="trx-tipe" value="expense" />
+      </div>
+
+      <!-- Kategori (expense/income) -->
+      <div class="form-group" id="group-kategori">
+        <label for="trx-kategori">Kategori</label>
+        <select id="trx-kategori">
+          <option value="">— Pilih Kategori —</option>
+        </select>
+      </div>
+
+      <!-- Akun tunggal (expense/income/investasi) -->
+      <div class="form-group" id="group-akun">
+        <label for="trx-akun">Akun <span class="required">*</span></label>
+        <select id="trx-akun">
+          <option value="">— Pilih Akun —</option>
+        </select>
+      </div>
+
+      <!-- Transfer: Dari & Tujuan -->
+      <div id="group-transfer" class="form-row hidden">
+        <div class="form-group">
+          <label for="trx-dari">Dari <span class="required">*</span></label>
+          <select id="trx-dari">
+            <option value="">— Akun Asal —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="trx-tujuan">Tujuan <span class="required">*</span></label>
+          <select id="trx-tujuan">
+            <option value="">— Akun Tujuan —</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Investasi: akun investasi tujuan (opsional) -->
+      <div class="form-group hidden" id="group-akun-investasi">
+        <label for="trx-akun-investasi">Akun Investasi Tujuan <span class="muted">(opsional)</span></label>
+        <select id="trx-akun-investasi">
+          <option value="">— Pilih (opsional) —</option>
+        </select>
+      </div>
+
+      <div id="form-error" class="form-error hidden"></div>
+
+      <button type="submit" class="btn-primary btn-full">Simpan</button>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODAL: TAMBAH / EDIT AKUN
+     ═══════════════════════════════════════════ -->
+<div id="modal-akun" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-akun-title">
+  <div class="modal-sheet modal-sheet-sm">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 id="modal-akun-title" class="modal-title">Tambah Akun</h2>
+      <button class="modal-close" data-close="modal-akun" aria-label="Tutup">✕</button>
+    </div>
+    <form id="form-akun" class="modal-form" novalidate>
+      <input type="hidden" id="akun-id" />
+
+      <div class="form-group">
+        <label for="akun-nama">Nama Akun <span class="required">*</span></label>
+        <input type="text" id="akun-nama" placeholder="cth. BCA, OVO, Saham..." maxlength="40" required />
+      </div>
+
+      <div class="form-group">
+        <label for="akun-tipe">Tipe Akun <span class="required">*</span></label>
+        <select id="akun-tipe" required>
+          <option value="biasa">Akun Biasa (Cash / Bank / E-Wallet)</option>
+          <option value="investasi">Akun Investasi</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="akun-saldo-awal">Saldo Awal</label>
+        <input type="number" id="akun-saldo-awal" placeholder="0" min="0" step="1" value="0" />
+      </div>
+
+      <div id="form-akun-error" class="form-error hidden"></div>
+
+      <button type="submit" class="btn-primary btn-full">Simpan Akun</button>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODAL: KONFIRMASI HAPUS
+     ═══════════════════════════════════════════ -->
+<div id="modal-konfirmasi" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal-sheet modal-sheet-sm">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title">Konfirmasi</h2>
+    </div>
+    <p id="konfirmasi-pesan" class="konfirmasi-pesan"></p>
+    <div class="konfirmasi-actions">
+      <button id="btn-konfirmasi-batal" class="btn-outline">Batal</button>
+      <button id="btn-konfirmasi-ok" class="btn-danger">Hapus</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TOAST NOTIFICATION
+     ═══════════════════════════════════════════ -->
+<div id="toast" class="toast hidden" role="alert" aria-live="polite"></div>
+
+<!-- shared: harus di-load pertama -->
+<script src="shared/db.js"></script>
+<script src="shared/ui.js"></script>
+<!-- halaman: urutan bebas, semua bergantung pada shared -->
+<script src="beranda/beranda.js"></script>
+<script src="akun/akun.js"></script>
+<script src="transaksi/transaksi.js"></script>
+<script src="summary/summary.js"></script>
+<!-- main: harus di-load terakhir -->
+<script src="main.js"></script>
+</body>
+</html>
